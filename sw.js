@@ -1,6 +1,6 @@
-/* Service worker ของแอป รอบเดือน — ชุดไฟล์ 20261028-122102 */
+/* Service worker ของแอป รอบเดือน — ชุดไฟล์ 20261028-130002 */
 'use strict';
-const CACHE = 'mcs-pwa-20261028-122102';
+const CACHE = 'mcs-pwa-20261028-130002';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon-32.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
