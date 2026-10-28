@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบบันทึกรอบเดือนสตรี</title>
+<meta name="description" content="บันทึกประจำเดือน อาการ และดูช่วงประมาณการรอบถัดไป">
+<meta name="theme-color" content="#E879A6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="รอบเดือน">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- ชุดไฟล์ 20261028-122102 -->
+<style>
+:root{--bg:#FFF7F5;--ink:#2E2541;--muted:#6E6386;--line:#F1E3EA;--pri:#E879A6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Sarabun","Prompt","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+body{display:flex;flex-direction:column;overflow:hidden}
+#bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:#fff;border-bottom:1px solid var(--line);font-size:14px}
+#bar[hidden]{display:none}
+#bar img{width:32px;height:32px;flex:none}
+#bar .t{flex:1;min-width:0;line-height:1.35}
+#bar .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .t span{color:var(--muted);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--pri);color:#fff;text-decoration:none;min-height:40px}
+.btn:focus-visible{outline:3px solid #2E2541;outline-offset:2px}
+.btn.soft{background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line) inset}
+.btn.x{background:transparent;color:var(--muted);font-size:22px;padding:4px 10px;min-height:40px}
+#frame{flex:1;width:100%;min-height:0;border:0;display:block;background:var(--bg)}
+.layer{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:linear-gradient(160deg,#FFE9F1 0%,#F0E8FF 55%,#E3F6EE 100%);transition:opacity .35s ease}
+.layer[hidden]{display:none}
+.layer.fade{opacity:0;pointer-events:none}
+.layer img{width:104px;height:104px;filter:drop-shadow(0 12px 22px rgba(120,80,140,.22))}
+.layer h1{font-size:20px;margin:0}
+.layer p{margin:0;color:var(--muted);max-width:340px;line-height:1.65}
+.dots{display:flex;gap:7px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--pri);opacity:.35;animation:b 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{opacity:1;transform:translateY(-4px)}}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#sheet{position:fixed;inset:0;z-index:9;background:rgba(46,37,65,.38);display:flex;align-items:flex-end;justify-content:center}
+#sheet[hidden]{display:none}
+#sheet .card{background:#fff;border-radius:22px 22px 0 0;max-width:480px;width:100%;padding:22px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.12)}
+#sheet h2{margin:0;font-size:18px}
+#sheet ol{padding-left:1.3em;line-height:1.9;margin:10px 0 16px}
+#sheet .btn{width:100%}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none}.layer{transition:none}}
+</style>
+</head>
+<body>
+<div id="bar" hidden role="region" aria-label="ติดตั้งแอป"><img src="icon-192.png" alt=""><div class="t"><b>ติดตั้ง รอบเดือน ลงเครื่อง</b><span>เปิดจากหน้าจอหลักได้เหมือนแอปทั่วไป</span></div><button class="btn" id="bar-install" type="button">ติดตั้ง</button><button class="btn x" id="bar-close" type="button" aria-label="ปิดแถบติดตั้ง">×</button></div>
+<iframe id="frame" title="ระบบบันทึกรอบเดือนสตรี" allow="clipboard-write; web-share; fullscreen"></iframe>
+<div class="layer" id="splash" role="status" aria-live="polite"><img src="icon-192.png" alt=""><h1>ระบบบันทึกรอบเดือนสตรี</h1><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><p>กำลังเปิดระบบ…</p></div>
+<div class="layer" id="offline" hidden role="alert"><img src="icon-192.png" alt=""><h1>ยังไม่มีการเชื่อมต่ออินเทอร์เน็ต</h1><p>ข้อมูลของคุณเก็บไว้ในระบบอย่างปลอดภัย เมื่อเชื่อมต่ออินเทอร์เน็ตแล้วแอปจะเปิดต่อให้เอง หรือกดลองใหม่</p><div class="row"><button class="btn" type="button" data-retry>ลองใหม่</button></div></div>
+<div class="layer" id="slow" hidden role="alert"><img src="icon-192.png" alt=""><h1>ระบบเปิดช้ากว่าปกติ</h1><p>รอสักครู่ หรือถ้ายังไม่ขึ้น ให้กดเปิดแบบหน้าเว็บเพื่อใช้งานต่อได้ทันที</p><div class="row"><button class="btn" type="button" data-retry>ลองใหม่</button><a class="btn soft" id="open-web" href="#">เปิดแบบหน้าเว็บ</a></div></div>
+<div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-t"><div class="card"><h2 id="sheet-t">ติดตั้งแอปลงเครื่อง</h2><ol id="sheet-steps"></ol><button class="btn" type="button" id="sheet-ok">เข้าใจแล้ว</button></div></div>
+<script>
+(function () {
+  'use strict';
+  var APP_URL = "https://script.google.com/macros/s/AKfycbzB3WBODwOKuHmOFu95I6TYy4os2KBvbb70p6Fm0uP-CopDxeY9fGcfyF39M8cANdv0/exec";
+  var APP_ORIGIN = APP_URL.split('/').slice(0, 3).join('/');
+  var BUILD = '20261028-122102';
+  var PASS = ['reset', 'share', 'code', 'state', 'error', 'admin'];
+  var $ = function (id) { return document.getElementById(id); };
+  var frame = $('frame'), splash = $('splash'), offline = $('offline'), slow = $('slow'), bar = $('bar'), sheet = $('sheet');
+  var hello = false, timer = 0, deferred = null, appWin = null, appOrigin = '';
+  var ua = navigator.userAgent || '';
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function standalone() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function mem(k, v) { try { if (v === undefined) return localStorage.getItem('mcs_pwa_' + k); localStorage.setItem('mcs_pwa_' + k, v); } catch (e) { return null; } return null; }
+  function show(el, on) { el.hidden = !on; }
+  // ส่งต่อพารามิเตอร์ที่ระบบต้องใช้ (ลิงก์ตั้งรหัสผ่าน ลิงก์แชร์ ผลการเข้าสู่ระบบด้วย Google) แล้วลบออกจากแถบที่อยู่
+  var first = (function () {
+    var q = new URLSearchParams(location.search), out = [];
+    PASS.forEach(function (k) { if (q.has(k)) out.push(encodeURIComponent(k) + '=' + encodeURIComponent(q.get(k))); });
+    var view = (q.get('view') || '').replace(/[^a-z_]/g, '').slice(0, 20);
+    if (location.search) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* ไม่เป็นไร */ } }
+    return APP_URL + (out.length ? '?' + out.join('&') : '') + (view ? '#' + view : '');
+  })();
+  $('open-web').href = APP_URL;
+  function hideSplash() { if (splash.hidden) return; splash.classList.add('fade'); setTimeout(function () { show(splash, false); splash.classList.remove('fade'); }, 400); }
+  function load() {
+    hello = false;
+    show(offline, false); show(slow, false); show(splash, true);
+    if (navigator.onLine === false) { show(splash, false); show(offline, true); return; }
+    frame.src = first || APP_URL;
+    first = '';
+    clearTimeout(timer);
+    timer = setTimeout(function () { if (!hello) { show(splash, false); show(navigator.onLine === false ? offline : slow, true); } }, 15000);
+  }
+  function trusted(o) { return o === APP_ORIGIN || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(o); }
+  function reply() {
+    if (!appWin) return;
+    try { appWin.postMessage({ app: 'mcs-pwa', type: 'shell', standalone: standalone(), canInstall: !!deferred, ios: isIOS, build: BUILD }, appOrigin); } catch (e) { /* ไม่เป็นไร */ }
+  }
+  function setTheme(c) { if (/^#[0-9a-f]{6}$/i.test(c || '')) document.querySelector('meta[name=theme-color]').setAttribute('content', c); }
+  function badge(n) {
+    n = Math.max(0, Math.min(99, Number(n) || 0));
+    try { if (n && navigator.setAppBadge) navigator.setAppBadge(n); else if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) { /* ไม่รองรับ */ }
+  }
+  function steps() {
+    var s = isIOS
+      ? ['แตะปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ที่แถบด้านล่างหรือด้านบน', 'เลื่อนลงแล้วแตะ <b>เพิ่มไปยังหน้าจอโฮม</b>', 'แตะ <b>เพิ่ม</b> ไอคอนแอปจะอยู่บนหน้าจอโฮม']
+      : ['เปิดเมนูของเบราว์เซอร์ (จุดสามจุด ⋮ หรือ ⋯)', 'เลือก <b>ติดตั้งแอป</b> หรือ <b>เพิ่มลงในหน้าจอหลัก</b>', 'กด <b>ติดตั้ง</b> แล้วเปิดจากไอคอนบนหน้าจอหลัก'];
+    $('sheet-steps').innerHTML = '<li>' + s.join('</li><li>') + '</li>';
+    show(sheet, true);
+    $('sheet-ok').focus();
+  }
+  function install() {
+    if (deferred) {
+      var d = deferred; deferred = null;
+      d.prompt();
+      d.userChoice.then(function () { show(bar, false); reply(); }, function () { reply(); });
+      return;
+    }
+    steps();
+  }
+  function maybeBar() {
+    if (standalone()) return;
+    if (Date.now() - Number(mem('dismiss') || 0) < 14 * 864e5) return;
+    if (deferred || isIOS) show(bar, true);
+  }
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.app !== 'mcs-pwa' || !trusted(e.origin)) return;
+    appWin = e.source; appOrigin = e.origin;
+    if (d.type === 'hello') { hello = true; clearTimeout(timer); show(slow, false); show(offline, false); setTheme(d.theme); reply(); setTimeout(hideSplash, 3000); }
+    else if (d.type === 'ready') hideSplash();
+    else if (d.type === 'theme') setTheme(d.color);
+    else if (d.type === 'title' && d.title) document.title = String(d.title).slice(0, 80);
+    else if (d.type === 'badge') badge(d.count);
+    else if (d.type === 'install') install();
+  });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; maybeBar(); reply(); });
+  window.addEventListener('appinstalled', function () { deferred = null; show(bar, false); reply(); });
+  window.addEventListener('online', function () { if (!offline.hidden || !hello) load(); });
+  window.addEventListener('offline', function () { if (!hello) { show(splash, false); show(slow, false); show(offline, true); } });
+  $('bar-install').addEventListener('click', install);
+  $('bar-close').addEventListener('click', function () { mem('dismiss', String(Date.now())); show(bar, false); });
+  $('sheet-ok').addEventListener('click', function () { show(sheet, false); });
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) show(sheet, false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') show(sheet, false); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-retry]'), function (b) { b.addEventListener('click', load); });
+  if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* ใช้งานต่อได้แม้ไม่มีแคช */ }); });
+  load();
+  if (isIOS) setTimeout(maybeBar, 4000);
+})();
+</script>
+</body>
+</html>
